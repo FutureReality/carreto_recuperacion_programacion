@@ -1,0 +1,198 @@
+# Donde se guardaran los productos en memoria
+inventario = TreeMap<String, Producto>()
+
+# Aqui es donde empieza todo el flujo principal del sistema
+inicio():
+    mientras verdadero:
+        LimpiarPantalla()
+        mostrarEnPantalla("Selecciona una opcion: (A)gregar, (E)liminar, (B)uscar, (V)er Carreto, (F)acturar, (S)alir")
+
+        UserInput = input()
+
+        por caracter en UserInput:
+            si caracter no esta en (a-z, A-Z):
+                LimpiarPantalla()
+                mostrarEnPantalla("¡Solo letras permitidas. Nada de numeros ni simbolos!")
+                continuar bucle
+
+        UserInput = convertirAMinusculas(UserInput)
+
+        opciones:
+            si UserInput == "a" o UserInput == "agregar":
+                agregarProducto()
+
+            si UserInput == "e" o UserInput == "eliminar":
+                eliminarProducto()
+
+            si UserInput == "b" o UserInput == "buscar":
+                buscarProducto()
+
+            si UserInput == "v" o UserInput == "ver carreto":
+                verCarreto()
+
+            si UserInput == "f" o UserInput == "facturar":
+                generarFactura()
+
+            si UserInput == "s" o UserInput == "salir":
+                salir del programa
+
+            sino:
+                LimpiarPantalla()
+                mostrarEnPantalla(UserInput, " no es una opcion valida")
+
+---------------------------------------------------------
+
+# Aqui agregamos productos al inventario
+agregarProducto():
+    LimpiarPantalla()
+    mostrarEnPantalla("Completa los datos del producto. <<esc>> para cancelar")
+
+    intentar:
+        codigo = input("Codigo (formato PROD-XXXX): ")
+
+        si codigo no cumple REGEX PROD-[0-9]{4}:
+            mostrarEnPantalla("ERROR: El codigo", codigo, "no sigue el formato correcto.")
+            volver a agregarProducto()
+
+        si codigo en inventario:
+            mostrarEnPantalla("ERROR: Ya existe un producto con el codigo", codigo)
+            volver a agregarProducto()
+
+        nombre = input("Nombre del producto: ")
+        precio = convertirADouble(input("Precio: "))
+        stock = convertirAInt(input("Stock disponible: "))
+        categoria = input("Categoria (ELECTRONICA, ROPA, ALIMENTACION): ")
+
+        si categoria no esta en ("ELECTRONICA", "ROPA", "ALIMENTACION"):
+            mostrarEnPantalla("Categoria no valida.")
+            volver a agregarProducto()
+
+        nuevoProducto = Producto(codigo, nombre, precio, stock, categoria)
+        inventario[codigo] = nuevoProducto
+
+        mostrarEnPantalla("Producto agregado correctamente.")
+        esperarTecla()
+
+    capturar error:
+        mostrarEnPantalla("Se ha producido un error al agregar el producto.")
+        esperarTecla()
+
+--------------------------------------------------
+
+# Permite eliminar un producto del inventario
+eliminarProducto():
+    LimpiarPantalla()
+    intentar:
+        codigo = input("Introduce el codigo del producto a eliminar: ")
+
+        si codigo no en inventario:
+            mostrarEnPantalla("ERROR: No existe ningun producto con ese codigo")
+            esperarTecla()
+            return
+
+        eliminar inventario[codigo]
+        mostrarEnPantalla("Producto eliminado correctamente.")
+        esperarTecla()
+
+    capturar error:
+        mostrarEnPantalla("Error al intentar eliminar el producto.")
+        esperarTecla()
+
+--------------------------------------------------------
+
+# Aqui el usuario podra buscar productos por nombre parcial o completo
+buscarProducto():
+    LimpiarPantalla()
+    intentar:
+        termino = input("Introduce el nombre o parte del nombre a buscar: ").toLowerCase()
+        encontrados = []
+
+        por cada producto en inventario:
+            si producto.nombre.toLowerCase() contiene termino:
+                añadir producto a encontrados
+
+        si encontrados esta vacio:
+            mostrarEnPantalla("No se encontro ningun producto con ese nombre.")
+        sino:
+            por cada producto en encontrados:
+                mostrarEnPantalla(producto)
+
+        esperarTecla()
+
+    capturar error:
+        mostrarEnPantalla("Error durante la busqueda.")
+        esperarTecla()
+
+-------------------------------------------------------------
+
+# Clase Carreto que guardara los productos que el usuario agrega
+clase Carreto:
+    atributos:
+        contenido = List<Producto>()
+        fechaHora = LocalDateTime.now()
+
+    metodo agregarAlCarreto(producto):
+        si producto.stock <= 0:
+            mostrarEnPantalla("ERROR: No hay stock suficiente.")
+            return
+        añadir producto a contenido
+        mostrarEnPantalla("Producto agregado al carreto.")
+
+    static metodo aplicarDescuentos(contenido):
+        agrupadosPorCategoria = agrupar por categoria contenido
+        descuentoAplicado = 0
+        por cada categoria, productos en agrupadosPorCategoria:
+            si longitud de productos >= 3:
+                descuentoAplicado += 15% del precio total de esa categoria
+        return descuentoAplicado
+
+
+-----------------------------------------------------------------
+
+# Permite ver el carreto y aplicar descuentos si corresponde
+verCarreto():
+    LimpiarPantalla()
+    intentar:
+        si carreto.contenido esta vacio:
+            mostrarEnPantalla("El carreto esta vacio")
+        sino:
+            por cada producto en carreto.contenido:
+                mostrarEnPantalla(producto)
+            descuento = Carreto.aplicarDescuentos(carreto.contenido)
+            mostrarEnPantalla("Descuento aplicado: ", descuento, " euros")
+
+        esperarTecla()
+
+    capturar error:
+        mostrarEnPantalla("Error al mostrar el carrito.")
+        esperarTecla()
+
+
+--------------------------------------------------
+
+# Genera la factura en JSON
+generarFactura():
+    LimpiarPantalla()
+    intentar:
+        factura = {}
+        factura["fecha_hora"] = LocalDateTime.now()
+        factura["productos"] = []
+        total = 0
+
+        por cada producto en carreto.contenido:
+            añadir a factura["productos"]:
+                {"codigo": producto.codigo, "nombre": producto.nombre, "precio": producto.precio}
+            total += producto.precio
+
+        descuento = Carreto.aplicarDescuentos(carreto.contenido)
+        factura["descuento"] = descuento
+        factura["total_final"] = total - descuento
+
+        guardarFacturaJSON(factura)
+
+        mostrarEnPantalla("Factura generada y guardada correctamente.")
+        esperarTecla()
+
+    capturar error:
+        mostrarEnPantalla("Error al generar la factura")
+        esperarTecla()
