@@ -125,13 +125,13 @@ buscarProducto():
 
 -------------------------------------------------------------
 
-# Clase Carreto que guardara los productos que el usuario agrega
-clase Carreto:
+# Clase Carrito que guardara los productos que el usuario agrega
+clase Carrito:
     atributos:
         contenido = List<Producto>()
         fechaHora = LocalDateTime.now()
 
-    metodo agregarAlCarreto(producto):
+    metodo agregarAlCarrito(producto):
         si producto.stock <= 0:
             mostrarEnPantalla("ERROR: No hay stock suficiente.")
             return
